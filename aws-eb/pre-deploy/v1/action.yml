@@ -1,0 +1,69 @@
+name: Pre deploy
+description: "Configure Docker image and install extensions for deployment"
+
+inputs:
+  image-tag:
+    description: "The tag bind to pushed Docker image"
+    required: false
+    default: ""
+  ebextensions:
+    description: "S3 URI of the ebextensions zip file"
+    required: true
+  eb-app-name:
+    description: "The name of deployed Elastic Beanstalk application"
+    required: false
+    default: ${{ github.event.repository.name }}
+  app-root-dir:
+    description: "The root directory of EB application"
+    required: false
+    default: /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+  aws-region:
+    description: "AWS Region"
+    required: false
+    default: "ap-northeast-1"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Docker image tag
+      shell: bash
+      run: |
+        if [ -z ${{ inputs.image-tag }} ]; then
+          echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        else
+          echo "TAG=${{ inputs.image-tag }}" >> $GITHUB_ENV
+        fi
+
+    - name: Replace Docker image tag
+      shell: bash
+      run: |
+        ls|grep "Dockerrun.*\.json"|xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
+
+        ls|grep "docker-compose.*\.yml"|xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
+
+    - name: Add .ebextensions
+      shell: bash
+      working-directory: "/tmp"
+      env:
+        EBEXTENSIONS: ${{ inputs.ebextensions }}
+        APP_ROOT_DIR: ${{ inputs.app-root-dir }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+        EBEXTENSIONS_ZIP_BASE=`basename $EBEXTENSIONS`
+        aws s3 --region $AWS_REGION cp $EBEXTENSIONS ./
+        unzip -q -o $EBEXTENSIONS_ZIP_BASE
+        cp -avn .ebextensions $APP_ROOT_DIR
+
+    - name: Add .elasticbeanstalk/config.yml
+      shell: bash
+      run: |
+        python <<EOF
+        from ebcli.core import fileoperations
+        fileoperations.create_config_file(
+            "${{ inputs.eb-app-name }}",
+            "${{ inputs.aws-region }}",
+            "Docker")
+        EOF
+
+        # Check created config file
+        cat .elasticbeanstalk/config.yml

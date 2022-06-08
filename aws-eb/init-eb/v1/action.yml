@@ -1,0 +1,128 @@
+name: Init EB
+description: "Initialize EB application and environment"
+
+inputs:
+  eb-app-name:
+    description: "The name of deployed Elastic Beanstalk application"
+    required: false
+    default: ${{ github.event.repository.name }}
+  eb-env-name:
+    description: "The name of deployed Elastic Beanstalk environment"
+    required: false
+    default: ${{ github.event.repository.name }}
+  eb-subdomain:
+    description: "The subdomain attached to EB environment"
+    required: false
+    default: ${{ github.event.repository.name }}
+  eb-config-file:
+    description: "S3 URI to EB config file"
+    required: true
+  eb-config-diff:
+      description: "Patch file name of EB config (file must be in '.elasticbeanstalk' folder)"
+      required: false
+      default: ""
+  ebi-arguments:
+      description: "Arguments for ebi command"
+      required: false
+      default: ""
+  billing-tag:
+      description: The name of cost center
+      required: true
+  aws-region:
+    description: "AWS Region"
+    required: false
+    default: "ap-northeast-1"
+
+outputs:
+  is-eb-initialized:
+    description: "Flag to describe whether EB was initialized"
+    # 型としてはstringになってしまうので注意！
+    value: ${{ steps.check-eb.outputs.is-already-exists == 'false' }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check if EB environment has already been initialized
+      shell: bash
+      id: check-eb
+      env:
+        EB_ENV_NAME: ${{ inputs.eb-env-name }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+        # EB環境一覧
+        EB_LIST=$(eb list --region $AWS_REGION |sed 's/^\* //g')
+        echo -e "----- EB env list -----\n${EB_LIST}\n-----------------------"
+
+        if [[ $(echo "$EB_LIST" | grep -E "^${EB_ENV_NAME}($|-[r-z][0-9a-z]{5})") ]]; then
+          echo "Environment(${EB_ENV_NAME}) already exists. Skip init-eb"
+          echo "::set-output name=is-already-exists::true"
+        else
+          echo "Environment(${EB_ENV_NAME}) does not exist. Start initializing..."
+          echo "::set-output name=is-already-exists::false"
+        fi
+
+    - name: Create EB config file
+      shell: bash
+      if: ${{ steps.check-eb.outputs.is-already-exists == 'false' }}
+      env:
+        EB_CONFIG_FILE: ${{ inputs.eb-config-file }}
+        EB_CONFIG_DIFF: ${{ inputs.eb-config-diff }}
+        BILLING_TAG: ${{ inputs.billing-tag }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+          EB_CONFIG_FILENAME=$(basename $EB_CONFIG_FILE)
+          echo "EB_CONFIG_FILENAME=${EB_CONFIG_FILENAME}" >> $GITHUB_ENV
+
+          aws s3 cp --region $AWS_REGION $EB_CONFIG_FILE .elasticbeanstalk/
+          sed -i "s/billing: _ebdefault_/billing: $BILLING_TAG/g" .elasticbeanstalk/${EB_CONFIG_FILENAME}
+
+          # パッチファイルが指定されている場合
+          if [ -n "$EB_CONFIG_DIFF" ]; then
+            if [ -e .elasticbeanstalk/${EB_CONFIG_DIFF} ]; then
+              cd .elasticbeanstalk/
+              # パッチファイルをマージ
+              yq ea '. as $item ireduce ({}; . * $item)' -i ${EB_CONFIG_FILENAME} ${EB_CONFIG_DIFF}
+              cd ../
+            else
+              # ファイルが指定されているが存在しなかった場合
+              echo "$EB_CONFIG_DIFF is set, but file does not exist."
+              exit 1
+            fi
+          fi
+
+          # Check created config file
+          echo "----- EB Config -----"
+          cat .elasticbeanstalk/${EB_CONFIG_FILENAME}
+
+    - name: Create EB environment
+      shell: bash
+      if: ${{ steps.check-eb.outputs.is-already-exists == 'false' }}
+      env:
+        EB_APP_NAME: ${{ inputs.eb-app-name }}
+        EB_ENV_NAME: ${{ inputs.eb-env-name }}
+        EB_SUBDOMAIN: ${{ inputs.eb-subdomain }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+          eb init $EB_APP_NAME -p docker --region $AWS_REGION
+          eb config put $EB_CONFIG_FILENAME --region $AWS_REGION
+          ebi create \
+            $EB_APP_NAME \
+            $EB_ENV_NAME \
+            $EB_SUBDOMAIN \
+            --region $AWS_REGION \
+            --cfg=${EB_CONFIG_FILENAME%%.*} \
+            ${{ inputs.ebi-arguments }}
+
+    - name: Put lifecycle config
+      shell: bash
+      if: ${{ steps.check-eb.outputs.is-already-exists == 'false' }}
+      env:
+        EB_APP_NAME: ${{ inputs.eb-app-name }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
+          SERVICE_ROLE=arn:aws:iam::${AWS_ACCOUNT_ID}:role/aws-elasticbeanstalk-service-role
+
+          aws elasticbeanstalk update-application-resource-lifecycle \
+            --region $AWS_REGION --application-name $EB_APP_NAME \
+            --resource-lifecycle-config "ServiceRole=${SERVICE_ROLE},VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=10,DeleteSourceFromS3=true}}"

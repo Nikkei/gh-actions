@@ -1,0 +1,47 @@
+name: Build image
+description: "Build Docker image"
+
+inputs:
+  repository-name:
+    description: "The name of repository used to image tag"
+    required: false
+    default: ${{ github.event.repository.name }}
+  use-image-cache:
+    description: Flag to enable caching docker image
+    required: false
+    default: "true"
+
+outputs:
+  image-name:
+    description: "The Docker image name used to build"
+    value: local/${{ inputs.repository-name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      if: ${{ inputs.use-image-cache == 'true' }}
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v2
+      with:
+        # Buildだけ行いイメージデータをエクスポートする
+        load: true
+        tags: local/${{ inputs.repository-name }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+    - name: Move cache
+      shell: bash
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache

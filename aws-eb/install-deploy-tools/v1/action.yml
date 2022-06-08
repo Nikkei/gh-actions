@@ -1,0 +1,35 @@
+name: Install deploy tools
+description: "Install tools for deployment"
+
+inputs:
+  python-version:
+    description: "Version of installed python"
+    required: false
+    default: '3.10'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install ebi and awsebcli
+      shell: bash
+      run: |
+        pip install -q -U ebi 'boto3<1.21'
+
+        # Check commands
+        eb --version
+        ebi --help
+
+    - name: Install yq
+      shell: bash
+      working-directory: /tmp
+      run: |
+        wget https://github.com/mikefarah/yq/releases/download/v4.16.2/yq_linux_amd64.tar.gz -O - | tar xz
+        sudo mv yq_linux_amd64 /usr/local/bin/yq
+
+        # Check command
+        yq -V

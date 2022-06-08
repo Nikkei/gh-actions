@@ -1,0 +1,111 @@
+name: Push image
+description: Push Docker image
+
+inputs:
+  aws-region:
+    description: "AWS Region"
+    required: false
+    default: "ap-northeast-1"
+  ecr-repository:
+    description: The name of ECR Repository
+    required: false
+    default: ${{ github.event.repository.name }}
+  src-image-tag:
+    description: The tag of source Docker image
+    required: false
+    default: local/${{ github.event.repository.name }}
+
+outputs:
+  image-tag:
+    description: "The tag bind to pushed Docker image"
+    value: ${{ steps.short-sha.outputs.value }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create ECR
+      shell: bash
+      env:
+        REPOSITORY: ${{ inputs.ecr-repository }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+        # ECRが無い場合、作成する
+        aws ecr describe-repositories --region $AWS_REGION \
+          --repository-names $REPOSITORY || \
+        aws ecr create-repository --region $AWS_REGION \
+          --repository-name $REPOSITORY \
+          --image-scanning-configuration scanOnPush=true
+
+    - name: Put lifecycle settings
+      shell: bash
+      env:
+        REPOSITORY: ${{ inputs.ecr-repository }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      run: |
+        POLICY_TEXT=$(cat << EOF
+        {
+          "rules": [
+            {
+              "rulePriority": 1,
+              "description": "Must keep latest image",
+              "selection": {
+                "tagStatus": "tagged",
+                "tagPrefixList": [
+                  "latest"
+                ],
+                "countType": "imageCountMoreThan",
+                "countNumber": 1
+              },
+              "action": {
+                "type": "expire"
+              }
+            },
+            {
+              "rulePriority": 2,
+              "description": "Keep only 10 images",
+              "selection": {
+                "tagStatus": "any",
+                "countType": "imageCountMoreThan",
+                "countNumber": 10
+              },
+              "action": {
+                "type": "expire"
+              }
+            }
+          ]
+        }
+        EOF
+        )
+
+        # lifecycle policyがない場合、設定を投入する
+        aws ecr get-lifecycle-policy --region $AWS_REGION \
+          --repository-name $REPOSITORY || \
+        aws ecr put-lifecycle-policy --region $AWS_REGION \
+          --repository-name $REPOSITORY \
+          --lifecycle-policy-text "$POLICY_TEXT"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Get short SHA
+      id: short-sha
+      shell: bash
+      run: echo "::set-output name=value::$(git rev-parse --short HEAD)"
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+      env:
+        AWS_REGION: ${{ inputs.aws-region }}
+        AWS_DEFAULT_REGION: ${{ inputs.aws-region }}
+
+    - name: Push Docker image
+      shell: bash
+      env:
+        SRC_IMAGE_TAG: ${{ inputs.src-image-tag }}
+        TRG_BASE_TAG: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}
+      run: |
+        docker tag ${SRC_IMAGE_TAG} ${TRG_BASE_TAG}:${{ steps.short-sha.outputs.value }}
+        docker tag ${SRC_IMAGE_TAG} ${TRG_BASE_TAG}:latest
+
+        docker image push --all-tags ${TRG_BASE_TAG}
