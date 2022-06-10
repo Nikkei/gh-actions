@@ -1,34 +1,37 @@
 # aws-eb
 
-DockerベースのアプリケーションをAWS Elastic Beanstalkへデプロイするためのカスタムアクション
+Custom actions for deploying Docker-based applications to AWS Elastic Beanstalk
 
 ## Description
 ### build-image
 
-- dockerのカスタムアクションを利用しイメージをビルドするアクション
-- cacheも自動的に行う
+This action
+- build images using docker custom actions
+- also automatically cache docker images
 
 ### init-eb
 
-- EB環境を作成するアクション
-  - 環境を作成するためにコンフィグの作成やLifecycleの設定も行う
-- すでに目的の環境が作成済みの場合、特になにも行わない
+This action
+- create an EB environment
+   - also set up a Lifecycle
+- does nothing if EB environment already exists
 
 ### install-deploy-tools
 
-- デプロイに必要なツール類をインストールする
+This action installs necessary tools for deployment
 
 ### login-aws
 
-- AWSのカスタムアクションを利用してAWSへの認証を行うアクション
-- 上記だけだとEBのコマンドが動かないので、別途credentialファイルの作成も行う
+This action
+- authenticates to AWS
+- also creates a credential file for EB command
 
 ### pre-deploy
 
-- EBへデプロイするための前準備を行う
-  - 設定ファイルの更新、拡張機能の追加等
+This action updates configs and installs extensions for EB deployment
 
 ### push-image
 
-- ECRへdockerイメージをプッシュするアクション
-  - ECRの作成及び設定の投入も行う
+This action
+- pushes docker images to ECR
+- also create a ECR and configure it
