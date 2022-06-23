@@ -1,0 +1,38 @@
+name: Generate terraform docs
+description: Generate terraform docs with PR
+
+inputs:
+  github-token:
+    description: The Github token used to merge PR
+    required: false
+    default: ""
+  disable-auto-pr-merge:
+    description: Whether or not to disable automatically merging PR
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Render terraform docs
+      uses: terraform-docs/gh-actions@main
+      with:
+        # レポジトリのルートディレクトリから再帰的に処理
+        find-dir: .
+
+    - name: Create Pull Request
+      id: create-pr
+      uses: peter-evans/create-pull-request@v4
+      with:
+        branch: update-terraform-docs
+        branch-suffix: short-commit-hash
+        delete-branch: true
+        title: Update terraform docs
+
+    - name: Merge PR
+      shell: bash
+      if: ${{ inputs.disable-auto-pr-merge == 'false' && steps.create-pr.outputs.pull-request-number != ''}}
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PULL_REQUEST_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+      run: gh pr merge --auto -d -s ${PULL_REQUEST_NUMBER}
