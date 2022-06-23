@@ -1,0 +1,28 @@
+name: Test terraform
+description: Test terraform configurations
+
+inputs:
+  github-token:
+    description: The Github token used to comment
+    required: true
+  terraform-version:
+    description: The version of terraform
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+
+    - name: Terraform format
+      shell: bash
+      run: terraform fmt -check -recursive ./
+
+    - name: Run tfsec PR commenter
+      uses: aquasecurity/tfsec-pr-commenter-action@v1.2.0
+      with:
+        github_token: ${{ inputs.github-token }}
+        tfsec_args: -m LOW

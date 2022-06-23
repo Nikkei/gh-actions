@@ -8,6 +8,8 @@
 
 ## Custom Actions
 
-| Name                | Description                                                                     | Note |
-| :------------------ | :------------------------------------------------------------------------------ | :--- |
-| [aws-eb](./aws-eb/) | Custom actions for deploying Docker-based applications to AWS Elastic Beanstalk | -    |
+| Name                                                  | Description                                                                     | Note |
+| :---------------------------------------------------- | :------------------------------------------------------------------------------ | :--- |
+| [aws-eb](./aws-eb/)                                   | Custom actions for deploying Docker-based applications to AWS Elastic Beanstalk | -    |
+| [generate-terraform-docs](./generate-terraform-docs/) | Generate terraform docs with PR                                                 | -    |
+| [test-terraform](./test-terraform/)                   | Test terraform configurations                                                   | -    |
