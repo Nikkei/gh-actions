@@ -20,6 +20,10 @@ runs:
         # レポジトリのルートディレクトリから再帰的に処理
         find-dir: .
 
+    - name: Change git repository permissions
+      shell: bash
+      run: sudo chmod -R ugo+rwx .git
+
     - name: Create Pull Request
       id: create-pr
       uses: peter-evans/create-pull-request@v4
