@@ -21,14 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: nikkei/gh-actions/github-ops/manage-github-labels/v1
+      - uses: nikkei/gh-actions/github-ops/manage-github-labels/v1@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### input
 
 | name                 | description                                                                                                          | required | default                    |
 | :------------------- | :------------------------------------------------------------------------------------------------------------------- | :------- | :------------------------- |
-| `github_token`       | The Github token used to create labels to the repository                                                             | true     | -                          |
+| `github_token`       | The Github token used to create labels to the repository. [GITHUB_TOKEN](https://docs.github.com/en/actions/security-guides/automatic-token-authentication) is recommended                                                             | true     | -                          |
 | `allow_added_labels` | Set `"true"` if you want to leave labels not defined in the yaml file. This action will delete the labels by default | false    | `"false"`                  |
 | `source_path`        | Path to the config file that defines labels                                                                          | false    | `.github/labels.yml`       |
 | `source_repository`  | GitHub repository to find labels definition file                                                                     | false    | `${{ github.repository }}` |
