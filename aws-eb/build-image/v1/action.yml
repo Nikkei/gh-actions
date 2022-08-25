@@ -10,6 +10,10 @@ inputs:
     description: Flag to enable caching docker image
     required: false
     default: "true"
+  build-context:
+    description: The information of build context. Only git context and path context are acceptable.
+    required: false
+    default: "."
 
 outputs:
   image-name:
@@ -34,8 +38,8 @@ runs:
     - name: Build Docker image
       uses: docker/build-push-action@v3
       with:
-        # Buildだけ行いイメージデータをエクスポートする
-        load: true
+        context: ${{ inputs.build-context }}
+        load: true # Buildだけ行いイメージデータをエクスポートする
         tags: local/${{ inputs.repository-name }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
