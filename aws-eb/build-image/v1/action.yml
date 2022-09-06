@@ -14,6 +14,10 @@ inputs:
     description: The information of build context. Only git context and path context are acceptable.
     required: false
     default: "."
+  build-args:
+    description: List of build-time variables
+    required: false
+    default: ""
 
 outputs:
   image-name:
@@ -39,6 +43,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         context: ${{ inputs.build-context }}
+        build-args: ${{ inputs.build-args }}
         load: true # Buildだけ行いイメージデータをエクスポートする
         tags: local/${{ inputs.repository-name }}
         cache-from: type=local,src=/tmp/.buildx-cache
