@@ -38,14 +38,14 @@ runs:
 
     - name: Configure AWS credentials
       if: ${{ !env.ACT }}
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v1-node16
       with:
         role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
 
     - name: Configure AWS credentials for local exec
       if: ${{ env.ACT }}
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v1-node16
       with:
         aws-access-key-id: ${{ inputs.aws-access-key-id }}
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
