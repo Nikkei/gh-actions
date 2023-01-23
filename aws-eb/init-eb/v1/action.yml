@@ -55,10 +55,10 @@ runs:
 
         if [[ $(echo "$EB_LIST" | grep -E "^${EB_ENV_NAME}($|-[r-z][0-9a-z]{5})") ]]; then
           echo "Environment(${EB_ENV_NAME}) already exists. Skip init-eb"
-          echo "::set-output name=is-already-exists::true"
+          echo "is-already-exists=true" >> $GITHUB_OUTPUT
         else
           echo "Environment(${EB_ENV_NAME}) does not exist. Start initializing..."
-          echo "::set-output name=is-already-exists::false"
+          echo "is-already-exists=false" >> $GITHUB_OUTPUT
         fi
 
     - name: Create EB config file
