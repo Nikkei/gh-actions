@@ -18,6 +18,10 @@ inputs:
     description: List of build-time variables
     required: false
     default: ""
+  platforms:
+    description: List or comma separated values of cpu architecture platform.
+    required: false
+    default: ""
 
 outputs:
   image-name:
@@ -46,6 +50,7 @@ runs:
         build-args: ${{ inputs.build-args }}
         load: true # Buildだけ行いイメージデータをエクスポートする
         tags: local/${{ inputs.repository-name }}
+        platforms: ${{ inputs.platforms }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
