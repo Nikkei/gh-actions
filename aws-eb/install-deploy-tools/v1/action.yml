@@ -18,7 +18,7 @@ runs:
     - name: Install ebi and awsebcli
       shell: bash
       run: |
-        pip install -q -U ebi 'boto3<1.21'
+        pip install -q -U ebi 'boto3<1.21' 'awsebcli<3.20.4'
 
         # Check commands
         eb --version
