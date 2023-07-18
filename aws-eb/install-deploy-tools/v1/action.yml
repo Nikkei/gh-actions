@@ -18,7 +18,11 @@ runs:
     - name: Install ebi and awsebcli
       shell: bash
       run: |
-        pip install -q -U ebi 'boto3<1.21' 'awsebcli<3.20.4'
+        # Tentative solution for Cython version-related problems
+        # See: https://github.com/yaml/pyyaml/issues/601
+        pip install wheel
+        pip install "Cython<3.0" "pyyaml==5.4.1" --no-build-isolation
+        pip install -q -U ebi 'boto3<1.21' 'awsebcli==3.20.3'
 
         # Check commands
         eb --version
