@@ -22,6 +22,10 @@ inputs:
     description: List or comma separated values of cpu architecture platform.
     required: false
     default: ""
+  file:
+    description: Path to the Dockerfile
+    required: false
+    default: ""
 
 outputs:
   image-name:
@@ -53,6 +57,7 @@ runs:
         platforms: ${{ inputs.platforms }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        file: ${{ inputs.file }}
 
     - name: Move cache
       shell: bash
