@@ -36,6 +36,7 @@ runs:
 
     - name: Replace Docker image tag
       shell: bash
+      working-directory: ${{ inputs.app-root-dir }}
       run: |
         ls|grep "Dockerrun.*\.json"|xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
 
@@ -56,6 +57,7 @@ runs:
 
     - name: Add .elasticbeanstalk/config.yml
       shell: bash
+      working-directory: ${{ inputs.app-root-dir }}
       run: |
         python <<EOF
         from ebcli.core import fileoperations

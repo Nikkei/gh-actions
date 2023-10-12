@@ -32,6 +32,10 @@ inputs:
     description: "AWS Region"
     required: false
     default: "ap-northeast-1"
+  app-root-dir:
+    description: "The root directory of EB application"
+    required: false
+    default: /home/runner/work/${{ github.event.repository.name }}/${{ github.event.repository.name }}
 
 outputs:
   is-eb-initialized:
@@ -48,6 +52,7 @@ runs:
       env:
         EB_ENV_NAME: ${{ inputs.eb-env-name }}
         AWS_REGION: ${{ inputs.aws-region }}
+      working-directory: ${{ inputs.app-root-dir }}
       run: |
         # EB環境一覧
         EB_LIST=$(eb list --region $AWS_REGION |sed 's/^\* //g')
@@ -69,6 +74,7 @@ runs:
         EB_CONFIG_DIFF: ${{ inputs.eb-config-diff }}
         BILLING_TAG: ${{ inputs.billing-tag }}
         AWS_REGION: ${{ inputs.aws-region }}
+      working-directory: ${{ inputs.app-root-dir }}
       run: |
           EB_CONFIG_FILENAME=$(basename $EB_CONFIG_FILE)
           echo "EB_CONFIG_FILENAME=${EB_CONFIG_FILENAME}" >> $GITHUB_ENV
@@ -102,6 +108,7 @@ runs:
         EB_ENV_NAME: ${{ inputs.eb-env-name }}
         EB_SUBDOMAIN: ${{ inputs.eb-subdomain }}
         AWS_REGION: ${{ inputs.aws-region }}
+      working-directory: ${{ inputs.app-root-dir }}
       run: |
           eb init $EB_APP_NAME -p docker --region $AWS_REGION
           eb config put $EB_CONFIG_FILENAME --region $AWS_REGION
@@ -119,6 +126,7 @@ runs:
       env:
         EB_APP_NAME: ${{ inputs.eb-app-name }}
         AWS_REGION: ${{ inputs.aws-region }}
+      working-directory: ${{ inputs.app-root-dir }}
       run: |
           AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
           SERVICE_ROLE=arn:aws:iam::${AWS_ACCOUNT_ID}:role/aws-elasticbeanstalk-service-role
