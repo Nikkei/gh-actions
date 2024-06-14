@@ -21,6 +21,10 @@ inputs:
     description: "AWS region"
     required: false
     default: "ap-northeast-1"
+  apt-cache-valid-seconds:
+    description: "Update the apt cache if it's older than this in seconds (for local debug only)"
+    required: false
+    default: 604800  # 60 * 60 * 24 * 7
 
 runs:
   using: "composite"
@@ -29,12 +33,32 @@ runs:
     - name: Install commands for local exec
       if: ${{ env.ACT }}
       shell: bash
+      env:
+        CACHE_VALID_SECONDS: ${{ inputs.apt-cache-valid-seconds }}
       run: |
-        sudo apt update && apt install -y less
+        # update the apt cache if it's older than the cache-valid-seconds
+        APT_LISTS_PATH="/var/lib/apt/lists"
+        APT_UPDATE_SUCCESS_STAMP_PATH="/var/lib/apt/periodic/update-success-stamp"
+        if [ -e "${APT_UPDATE_SUCCESS_STAMP_PATH}" ]; then
+          CACHE_TIME=$(stat -c %Y "${APT_UPDATE_SUCCESS_STAMP_PATH}")
+        elif [ -e "${APT_LISTS_PATH}" ] && [ -n "$(ls -A ${APT_LISTS_PATH})" ] ; then
+          CACHE_TIME=$(stat -c %Y "${APT_LISTS_PATH}")
+        else
+          CACHE_TIME=0
+        fi
+        if [ $(( "${CACHE_TIME}" + "${CACHE_VALID_SECONDS}" )) -lt $(date +%s) ]; then
+          apt-get update
+        fi
 
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install
+        # install less
+        which less || apt-get install -y less
+
+        # install awscli
+        if ! which aws; then
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+        fi
 
     - name: Configure AWS credentials
       if: ${{ !env.ACT }}
@@ -51,6 +75,7 @@ runs:
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-session-token: ${{ inputs.aws-session-token }}
         aws-region: ${{ inputs.aws-region }}
+        role-to-assume: null  # act seems propagate inputs to actions called in an action
 
     # ebコマンドを実行するためには、クレデンシャルがファイルとして存在していることが必要
     - name: Create credentials file
