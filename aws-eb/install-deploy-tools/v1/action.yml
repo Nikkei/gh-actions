@@ -5,7 +5,7 @@ inputs:
   python-version:
     description: "Version of installed python"
     required: false
-    default: '3.10'
+    default: '3.12'
 
 runs:
   using: "composite"
@@ -18,11 +18,7 @@ runs:
     - name: Install ebi and awsebcli
       shell: bash
       run: |
-        # Tentative solution for Cython version-related problems
-        # See: https://github.com/yaml/pyyaml/issues/601
-        pip install wheel
-        pip install "Cython<3.0" "pyyaml==5.4.1" --no-build-isolation
-        pip install -q -U ebi 'boto3<1.21' 'awsebcli==3.20.3'
+        pip install -q -U ebi 'boto3<1.36' 'awsebcli==3.21.0'
 
         # Check commands
         eb --version
@@ -32,7 +28,7 @@ runs:
       shell: bash
       working-directory: /tmp
       run: |
-        wget -q https://github.com/mikefarah/yq/releases/download/v4.43.1/yq_linux_amd64.tar.gz -O - | tar xz
+        wget -q https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64.tar.gz -O - | tar xz
         sudo mv yq_linux_amd64 /usr/local/bin/yq
 
         # Check command
