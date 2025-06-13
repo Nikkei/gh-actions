@@ -5,7 +5,7 @@ inputs:
   python-version:
     description: "Version of installed python"
     required: false
-    default: '3.12'
+    default: "3.12"
 
 runs:
   using: "composite"
@@ -18,7 +18,7 @@ runs:
     - name: Install ebi and awsebcli
       shell: bash
       run: |
-        pip install -q -U ebi 'boto3<1.36' 'awsebcli==3.21.0'
+        pip install -q -U ebi 'awsebcli==3.24.1'
 
         # Check commands
         eb --version
