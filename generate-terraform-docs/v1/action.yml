@@ -15,7 +15,7 @@ runs:
   using: composite
   steps:
     - name: Render terraform docs
-      uses: terraform-docs/gh-actions@main
+      uses: terraform-docs/gh-actions@6de6da0cefcc6b4b7a5cbea4d79d97060733093c # v1.4.1
       with:
         # レポジトリのルートディレクトリから再帰的に処理
         find-dir: .
@@ -26,7 +26,7 @@ runs:
 
     - name: Create Pull Request
       id: create-pr
-      uses: peter-evans/create-pull-request@v8
+      uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
       with:
         branch: update-terraform-docs
         branch-suffix: short-commit-hash
