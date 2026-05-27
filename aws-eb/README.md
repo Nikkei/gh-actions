@@ -18,7 +18,14 @@ This action
 
 ### install-deploy-tools
 
-This action installs necessary tools for deployment
+This action installs necessary tools for deployment.
+
+`ebi` and `awsebcli` are installed from a hash-pinned lock file (`install-deploy-tools/v1/requirements.txt`) using pip's hash-checking mode. To bump versions, edit `requirements.in` and regenerate the lock:
+
+```sh
+cd install-deploy-tools/v1
+uv pip compile requirements.in --generate-hashes --python-version 3.12 --python-platform linux -o requirements.txt
+```
 
 ### login-aws
 

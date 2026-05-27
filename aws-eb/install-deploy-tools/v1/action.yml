@@ -15,16 +15,15 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - name: Cache pip packages
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-      with:
-        path: ~/.cache/pip
-        key: pip-deploy-tools-${{ runner.os }}-ebi-awsebcli3.27.2
+    - name: Set up uv
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
     - name: Install ebi and awsebcli
       shell: bash
+      env:
+        REQUIREMENTS_FILE: ${{ github.action_path }}/requirements.txt
       run: |
-        pip install -q -U ebi 'awsebcli==3.27.2'
+        uv pip install -q --system --require-hashes -r "$REQUIREMENTS_FILE"
 
         # Check commands
         eb --version
