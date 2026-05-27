@@ -16,15 +16,15 @@ runs:
         python-version: ${{ inputs.python-version }}
 
     - name: Cache pip packages
-      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ~/.cache/pip
-        key: pip-deploy-tools-${{ runner.os }}-ebi-awsebcli3.26
+        key: pip-deploy-tools-${{ runner.os }}-ebi-awsebcli3.27.2
 
     - name: Install ebi and awsebcli
       shell: bash
       run: |
-        pip install -q -U ebi 'awsebcli==3.26'
+        pip install -q -U ebi 'awsebcli==3.27.2'
 
         # Check commands
         eb --version
@@ -34,7 +34,7 @@ runs:
       shell: bash
       working-directory: /tmp
       run: |
-        wget -q https://github.com/mikefarah/yq/releases/download/v4.52.4/yq_linux_amd64.tar.gz -O - | tar xz
+        wget -q https://github.com/mikefarah/yq/releases/download/v4.53.2/yq_linux_amd64.tar.gz -O - | tar xz
         sudo mv yq_linux_amd64 /usr/local/bin/yq
 
         # Check command
