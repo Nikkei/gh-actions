@@ -27,20 +27,22 @@ runs:
   steps:
     - name: Set Docker image tag
       shell: bash
+      env:
+        IMAGE_TAG: ${{ inputs.image-tag }}
       run: |
-        if [ -z ${{ inputs.image-tag }} ]; then
-          echo "TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        if [ -z "$IMAGE_TAG" ]; then
+          echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
         else
-          echo "TAG=${{ inputs.image-tag }}" >> $GITHUB_ENV
+          echo "TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
         fi
 
     - name: Replace Docker image tag
       shell: bash
       working-directory: ${{ inputs.app-root-dir }}
       run: |
-        ls|grep "Dockerrun.*\.json"|xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
+        ls | grep "Dockerrun.*\.json" | xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
 
-        ls|grep "docker-compose.*\.yml"|xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
+        ls | grep "docker-compose.*\.yml" | xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
 
     - name: Add .ebextensions
       shell: bash
@@ -50,20 +52,26 @@ runs:
         APP_ROOT_DIR: ${{ inputs.app-root-dir }}
         AWS_REGION: ${{ inputs.aws-region }}
       run: |
-        EBEXTENSIONS_ZIP_BASE=`basename $EBEXTENSIONS`
-        aws s3 --region $AWS_REGION cp $EBEXTENSIONS ./
-        unzip -q -o $EBEXTENSIONS_ZIP_BASE
-        cp -avn .ebextensions $APP_ROOT_DIR
+        EBEXTENSIONS_ZIP_BASE=$(basename "$EBEXTENSIONS")
+        aws s3 --region "$AWS_REGION" cp "$EBEXTENSIONS" ./
+        unzip -q -o "$EBEXTENSIONS_ZIP_BASE"
+        cp -avn .ebextensions "$APP_ROOT_DIR"
 
     - name: Add .elasticbeanstalk/config.yml
       shell: bash
       working-directory: ${{ inputs.app-root-dir }}
+      env:
+        EB_APP_NAME: ${{ inputs.eb-app-name }}
+        AWS_REGION: ${{ inputs.aws-region }}
       run: |
-        python <<EOF
+        # ヒアドキュメントをクオートし、値は os.environ 経由で渡すことで
+        # Python コードへのインジェクションを防ぐ
+        python <<'EOF'
+        import os
         from ebcli.core import fileoperations
         fileoperations.create_config_file(
-            "${{ inputs.eb-app-name }}",
-            "${{ inputs.aws-region }}",
+            os.environ["EB_APP_NAME"],
+            os.environ["AWS_REGION"],
             "Docker")
         EOF
 
