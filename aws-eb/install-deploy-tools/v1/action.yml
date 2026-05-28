@@ -32,8 +32,14 @@ runs:
     - name: Install yq
       shell: bash
       working-directory: /tmp
+      env:
+        YQ_VERSION: v4.53.2
+        # yq_linux_amd64.tar.gz の SHA256（YQ_VERSION 更新時に併せて更新すること）
+        YQ_SHA256: 44c3c6df6c58ef1460d98425954ca5e832926e0e8a1d75c5c8fd261691351510
       run: |
-        wget -q https://github.com/mikefarah/yq/releases/download/v4.53.2/yq_linux_amd64.tar.gz -O - | tar xz
+        wget -q "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64.tar.gz" -O yq_linux_amd64.tar.gz
+        echo "${YQ_SHA256}  yq_linux_amd64.tar.gz" | sha256sum -c -
+        tar xzf yq_linux_amd64.tar.gz
         sudo mv yq_linux_amd64 /usr/local/bin/yq
 
         # Check command
