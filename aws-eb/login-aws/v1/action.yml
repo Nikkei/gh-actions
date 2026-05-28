@@ -24,7 +24,7 @@ inputs:
   apt-cache-valid-seconds:
     description: "Update the apt cache if it's older than this in seconds (for local debug only)"
     required: false
-    default: 604800  # 60 * 60 * 24 * 7
+    default: 604800 # 60 * 60 * 24 * 7
 
 runs:
   using: "composite"
@@ -75,7 +75,7 @@ runs:
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-session-token: ${{ inputs.aws-session-token }}
         aws-region: ${{ inputs.aws-region }}
-        role-to-assume: null  # act seems propagate inputs to actions called in an action
+        role-to-assume: null # act seems propagate inputs to actions called in an action
 
     # ebコマンドを実行するためには、クレデンシャルがファイルとして存在していることが必要
     - name: Create credentials file

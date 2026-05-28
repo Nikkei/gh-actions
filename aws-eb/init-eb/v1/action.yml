@@ -18,16 +18,16 @@ inputs:
     description: "S3 URI to EB config file"
     required: true
   eb-config-diff:
-      description: "Patch file name of EB config (file must be in '.elasticbeanstalk' folder)"
-      required: false
-      default: ""
+    description: "Patch file name of EB config (file must be in '.elasticbeanstalk' folder)"
+    required: false
+    default: ""
   ebi-arguments:
-      description: "Arguments for ebi command"
-      required: false
-      default: ""
+    description: "Arguments for ebi command"
+    required: false
+    default: ""
   billing-tag:
-      description: The name of cost center
-      required: true
+    description: The name of cost center
+    required: true
   aws-region:
     description: "AWS Region"
     required: false
@@ -76,29 +76,29 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
       working-directory: ${{ inputs.app-root-dir }}
       run: |
-          EB_CONFIG_FILENAME=$(basename "$EB_CONFIG_FILE")
-          echo "EB_CONFIG_FILENAME=${EB_CONFIG_FILENAME}" >> "$GITHUB_ENV"
+        EB_CONFIG_FILENAME=$(basename "$EB_CONFIG_FILE")
+        echo "EB_CONFIG_FILENAME=${EB_CONFIG_FILENAME}" >> "$GITHUB_ENV"
 
-          aws s3 cp --region "$AWS_REGION" "$EB_CONFIG_FILE" .elasticbeanstalk/
-          sed -i "s/billing: _ebdefault_/billing: $BILLING_TAG/g" ".elasticbeanstalk/${EB_CONFIG_FILENAME}"
+        aws s3 cp --region "$AWS_REGION" "$EB_CONFIG_FILE" .elasticbeanstalk/
+        sed -i "s/billing: _ebdefault_/billing: $BILLING_TAG/g" ".elasticbeanstalk/${EB_CONFIG_FILENAME}"
 
-          # パッチファイルが指定されている場合
-          if [ -n "$EB_CONFIG_DIFF" ]; then
-            if [ -e ".elasticbeanstalk/${EB_CONFIG_DIFF}" ]; then
-              cd .elasticbeanstalk/
-              # パッチファイルをマージ
-              yq ea '. as $item ireduce ({}; . * $item)' -i "${EB_CONFIG_FILENAME}" "${EB_CONFIG_DIFF}"
-              cd ../
-            else
-              # ファイルが指定されているが存在しなかった場合
-              echo "$EB_CONFIG_DIFF is set, but file does not exist."
-              exit 1
-            fi
+        # パッチファイルが指定されている場合
+        if [ -n "$EB_CONFIG_DIFF" ]; then
+          if [ -e ".elasticbeanstalk/${EB_CONFIG_DIFF}" ]; then
+            cd .elasticbeanstalk/
+            # パッチファイルをマージ
+            yq ea '. as $item ireduce ({}; . * $item)' -i "${EB_CONFIG_FILENAME}" "${EB_CONFIG_DIFF}"
+            cd ../
+          else
+            # ファイルが指定されているが存在しなかった場合
+            echo "$EB_CONFIG_DIFF is set, but file does not exist."
+            exit 1
           fi
+        fi
 
-          # Check created config file
-          echo "----- EB Config -----"
-          cat ".elasticbeanstalk/${EB_CONFIG_FILENAME}"
+        # Check created config file
+        echo "----- EB Config -----"
+        cat ".elasticbeanstalk/${EB_CONFIG_FILENAME}"
 
     - name: Create EB environment
       shell: bash
@@ -111,17 +111,17 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
       working-directory: ${{ inputs.app-root-dir }}
       run: |
-          eb init "$EB_APP_NAME" -p docker --region "$AWS_REGION"
-          eb config put "$EB_CONFIG_FILENAME" --region "$AWS_REGION"
-          # ebi-arguments は複数引数に分割する必要があるため、意図的にクオートしない
-          # shellcheck disable=SC2086
-          ebi create \
-            "$EB_APP_NAME" \
-            "$EB_ENV_NAME" \
-            "$EB_SUBDOMAIN" \
-            --region "$AWS_REGION" \
-            --cfg="${EB_CONFIG_FILENAME%%.*}" \
-            $EBI_ARGUMENTS
+        eb init "$EB_APP_NAME" -p docker --region "$AWS_REGION"
+        eb config put "$EB_CONFIG_FILENAME" --region "$AWS_REGION"
+        # ebi-arguments は複数引数に分割する必要があるため、意図的にクオートしない
+        # shellcheck disable=SC2086
+        ebi create \
+          "$EB_APP_NAME" \
+          "$EB_ENV_NAME" \
+          "$EB_SUBDOMAIN" \
+          --region "$AWS_REGION" \
+          --cfg="${EB_CONFIG_FILENAME%%.*}" \
+          $EBI_ARGUMENTS
 
     - name: Put lifecycle config
       shell: bash
@@ -131,9 +131,9 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
       working-directory: ${{ inputs.app-root-dir }}
       run: |
-          AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
-          SERVICE_ROLE="arn:aws:iam::${AWS_ACCOUNT_ID}:role/aws-elasticbeanstalk-service-role"
+        AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
+        SERVICE_ROLE="arn:aws:iam::${AWS_ACCOUNT_ID}:role/aws-elasticbeanstalk-service-role"
 
-          aws elasticbeanstalk update-application-resource-lifecycle \
-            --region "$AWS_REGION" --application-name "$EB_APP_NAME" \
-            --resource-lifecycle-config "ServiceRole=${SERVICE_ROLE},VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=10,DeleteSourceFromS3=true}}"
+        aws elasticbeanstalk update-application-resource-lifecycle \
+          --region "$AWS_REGION" --application-name "$EB_APP_NAME" \
+          --resource-lifecycle-config "ServiceRole=${SERVICE_ROLE},VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=10,DeleteSourceFromS3=true}}"
