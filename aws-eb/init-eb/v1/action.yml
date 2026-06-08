@@ -68,6 +68,7 @@ runs:
 
     - name: Create EB config file
       shell: bash
+      id: create-eb-config
       if: ${{ steps.check-eb.outputs.is-already-exists == 'false' }}
       env:
         EB_CONFIG_FILE: ${{ inputs.eb-config-file }}
@@ -77,7 +78,7 @@ runs:
       working-directory: ${{ inputs.app-root-dir }}
       run: |
         EB_CONFIG_FILENAME=$(basename "$EB_CONFIG_FILE")
-        echo "EB_CONFIG_FILENAME=${EB_CONFIG_FILENAME}" >> "$GITHUB_ENV"
+        echo "eb-config-filename=${EB_CONFIG_FILENAME}" >> "$GITHUB_OUTPUT"
 
         aws s3 cp --region "$AWS_REGION" "$EB_CONFIG_FILE" .elasticbeanstalk/
         sed -i "s/billing: _ebdefault_/billing: $BILLING_TAG/g" ".elasticbeanstalk/${EB_CONFIG_FILENAME}"
@@ -109,6 +110,7 @@ runs:
         EB_SUBDOMAIN: ${{ inputs.eb-subdomain }}
         EBI_ARGUMENTS: ${{ inputs.ebi-arguments }}
         AWS_REGION: ${{ inputs.aws-region }}
+        EB_CONFIG_FILENAME: ${{ steps.create-eb-config.outputs.eb-config-filename }}
       working-directory: ${{ inputs.app-root-dir }}
       run: |
         eb init "$EB_APP_NAME" -p docker --region "$AWS_REGION"

@@ -33,12 +33,17 @@ runs:
       with:
         token: ${{ inputs.github_token }}
         repository: ${{ inputs.source_repository }}
-    - run: |
+        persist-credentials: false
+    - env:
+        ACCESS_TOKEN: ${{ inputs.github_token }}
+        SOURCE_PATH: ${{ inputs.source_path }}
+        TARGET_REPOSITORY: ${{ inputs.target_repository }}
+      run: |
         github-label-sync \
-          --access-token ${{ inputs.github_token }} \
-          --labels ${{ inputs.source_path }} \
+          --access-token "$ACCESS_TOKEN" \
+          --labels "$SOURCE_PATH" \
           ${{ inputs.allow_added_labels != 'false' && '--allow-added-labels' || '' }} \
-          ${{ inputs.target_repository }}
+          "$TARGET_REPOSITORY"
       shell: bash
 branding:
   color: orange

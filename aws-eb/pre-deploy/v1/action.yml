@@ -26,19 +26,22 @@ runs:
   using: "composite"
   steps:
     - name: Set Docker image tag
+      id: set-tag
       shell: bash
       env:
         IMAGE_TAG: ${{ inputs.image-tag }}
       run: |
         if [ -z "$IMAGE_TAG" ]; then
-          echo "TAG=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "tag=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
         else
-          echo "TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Replace Docker image tag
       shell: bash
       working-directory: ${{ inputs.app-root-dir }}
+      env:
+        TAG: ${{ steps.set-tag.outputs.tag }}
       run: |
         ls | grep "Dockerrun.*\.json" | xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
 
