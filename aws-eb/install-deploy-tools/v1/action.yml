@@ -16,7 +16,7 @@ runs:
         python-version: ${{ inputs.python-version }}
 
     - name: Set up uv
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
     - name: Install ebi and awsebcli
       shell: bash
@@ -33,9 +33,9 @@ runs:
       shell: bash
       working-directory: /tmp
       env:
-        YQ_VERSION: v4.53.2
+        YQ_VERSION: v4.53.3
         # yq_linux_amd64.tar.gz の SHA256（YQ_VERSION 更新時に併せて更新すること）
-        YQ_SHA256: 44c3c6df6c58ef1460d98425954ca5e832926e0e8a1d75c5c8fd261691351510
+        YQ_SHA256: b4077cab0f9ee5ce8381e602d090daa69a0afb7e57eb9a5b20e9cb416d7f6794
       run: |
         wget -q "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64.tar.gz" -O yq_linux_amd64.tar.gz
         echo "${YQ_SHA256}  yq_linux_amd64.tar.gz" | sha256sum -c -
