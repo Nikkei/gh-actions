@@ -43,9 +43,10 @@ runs:
       env:
         TAG: ${{ steps.set-tag.outputs.tag }}
       run: |
-        ls | grep "Dockerrun.*\.json" | xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
-
-        ls | grep "docker-compose.*\.yml" | xargs -n1 -r sed -i "s/<TAG>/$TAG/g" || true
+        shopt -s nullglob
+        for f in Dockerrun*.json docker-compose*.yml docker-compose*.yaml compose.yml compose.yaml; do
+          sed -i "s/<TAG>/$TAG/g" "$f"
+        done
 
     - name: Add .ebextensions
       shell: bash
@@ -58,6 +59,7 @@ runs:
         EBEXTENSIONS_ZIP_BASE=$(basename "$EBEXTENSIONS")
         aws s3 --region "$AWS_REGION" cp "$EBEXTENSIONS" ./
         unzip -q -o "$EBEXTENSIONS_ZIP_BASE"
+        # リポジトリ側に同名ファイルがある場合はそちらを優先する（上書きしない）
         cp -avn .ebextensions "$APP_ROOT_DIR"
 
     - name: Add .elasticbeanstalk/config.yml
