@@ -99,11 +99,20 @@ runs:
     - name: Push Docker image
       shell: bash
       env:
+        REPOSITORY: ${{ inputs.ecr-repository }}
+        AWS_REGION: ${{ inputs.aws-region }}
         SRC_IMAGE_TAG: ${{ inputs.src-image-tag }}
         TRG_BASE_TAG: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}
         IMAGE_TAG: ${{ steps.short-sha.outputs.value }}
       run: |
-        docker tag "$SRC_IMAGE_TAG" "${TRG_BASE_TAG}:${IMAGE_TAG}"
-        docker tag "$SRC_IMAGE_TAG" "${TRG_BASE_TAG}:latest"
+        if aws ecr describe-images --region "$AWS_REGION" \
+             --repository-name "$REPOSITORY" \
+             --image-ids imageTag="$IMAGE_TAG" 2>/dev/null; then
+          echo "Image tag ${IMAGE_TAG} already exists, skipping push for commit tag"
+        else
+          docker tag "$SRC_IMAGE_TAG" "${TRG_BASE_TAG}:${IMAGE_TAG}"
+          docker image push "${TRG_BASE_TAG}:${IMAGE_TAG}"
+        fi
 
-        docker image push --all-tags "$TRG_BASE_TAG"
+        docker tag "$SRC_IMAGE_TAG" "${TRG_BASE_TAG}:latest"
+        docker image push "${TRG_BASE_TAG}:latest"
