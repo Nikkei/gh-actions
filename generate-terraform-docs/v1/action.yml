@@ -39,4 +39,10 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         PULL_REQUEST_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
-      run: gh pr merge --auto -d -s ${PULL_REQUEST_NUMBER}
+      run: |
+        # PR 作成直後は mergeability が未計算 (mergeStateStatus=UNKNOWN) になることがあり、
+        # その場合 gh は --auto を enablePullRequestAutoMerge の呼び出しに切り替える。
+        # auto merge を許可していないリポジトリではこれが失敗するため、通常マージで救済する。
+        gh pr merge --auto -d -s "${PULL_REQUEST_NUMBER}" && exit 0
+        sleep 5
+        gh pr merge -d -s "${PULL_REQUEST_NUMBER}"
